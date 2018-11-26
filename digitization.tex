@@ -1,0 +1,152 @@
+\section{GEM digitization}
+\label{digitization}
+
+This part describes the simulation of GEM response starting from the g4sbs simulation information, as well as the background superimposition method.
+
+\subsection{Simulation input}
+\label{simu_input}
+
+The simulation input for the digitization algorithm is produced by g4sbs, a GEANT4 based simulation of the SBS experiments.
+When a particle is going through a GEM layer, the following information is recorded:
+%
+\begin{itemize}
+\item{the energy deposited by the particle in the GEM drift gas layer $E_{dep}$;}
+\item{the hit average time $t_{\rm hit}$ and position $\vec{x}_{\rm hit}$ in the GEM drift gas layer (weighed with energy deposit), as well as the entrance and exit position of the particle in the GEM drift gas layer, $\vec{x}_{\rm in}$ and $\vec{x}_{\rm out}$;}
+\item{the PDG particle ID (PID), track ID (TID) and mother track ID (MID);}
+\item{and of course, the GEM detector ID.}
+\end{itemize}
+%
+The energy and positions are necessary and sufficient to implement the digitization steps that are described in the next section.
+The different IDs of the Monte Carlo particle are useful to identify the primary hits during further analysis steps.
+
+\subsection{Digitization of Monte Carlo information}
+\label{digi_mc}
+
+\subsubsection{ionization and avalanche model}
+\label{ava_model}
+
+The first step for the digitization is the simulation of the avalanche, using the energy deposited, and the entrance and exit position of the particle in the GEM drift gas.
+The number of ions generated for the avalanche by the particle is:
+%
+\begin{equation}
+  N_{ions} = {\rm Poisson}(E_{dep}/[{\rm GasIonWidth}=26 eV]). % (GasIonWidth tunable in database).
+\end{equation}
+%
+%proportional to the energy deposit: 1 ion is generated on average for every 26 eV deposited (DB param. gasionwidth); the generated number of ions is then being smeared by a Poisson distribution.
+The position of each ion is generated uniformly between the path made by the vector $\vec{v}_{path} = \vec{x}_{\rm out}-\vec{x}_{\rm in}$. 
+For each ion, the spread of the avalanche is
+%
+\begin{equation}
+  \sigma_{ava} = t_{drift} \times [{\rm GasDiffusion} = 10^5 {\rm mm}^2{\rm s}^{-1}],
+\end{equation}
+%
+with $t_{drift} = d_{ion-readout}/[{\rm GasDriftVelocity} = 5.5 10^7 {\rm mm}\,{\rm s}^{-1}]$ the avalanche drift time.
+The total avalanche charge is determined for each ion by
+%
+\begin{equation}
+  Q_{ava} = {\rm Gaus}([{\rm GainMain} = 8000], [{\rm Gain0} = 20] )
+\end{equation}
+%
+%the gain (DB param. gainmain), smeared with a normal distribution ($sigma$ fixed by DB param. gain0).
+%; It is also possible to generate the avalanche charge with a Furry distribution (by setting DB param. avalanchechargestatistics to 1).
+% * put formulas instead, when possible ***
+
+The avalanche is then numerically integrated for all ions, over an area equal to $\sigma_{ava} \times[{\rm AvalancheFiducialBand} = 10]$.
+%
+%\begin{equation}
+% = t_{drift} \times [{\rm GasDiffusion} = 10^5 {\rm mm}^2{\rm s}^{-1}],
+%\end{equation}
+%
+
+%10 times the $\sigma$ spread of the avalanche (DB param. avalanchefiducialband).
+During this process, the list of strips which will be hit by the avalanche is evaluated for each coordinate, and the energy deposited in each of the strips hit is calculated as a function of the surface of the strip covered by the avalanche convoluted by the surfacic density of ions, determined by the avalanche distribution function, which is a Cauchy-Lorentz function.
+This signal is then used to evaluate the ADC samples.
+%Of course, it is bounded by the chamber geometrical limits
+%Note The time of the beginning of the signal is calculated as the distance between the 
+
+\subsubsection{calculation of ADC samples}
+\label{adc_samp}
+
+The avalanche charge deposited in each strip is sampled in intervals of time corresponding to the sampling periods of the APV25 chip  with, for samples $i = 1$ to 6, the amplitude $a_i$:
+%
+\begin{equation}
+  a_i = Max(0, A \frac{t_i-t_0}{\tau^2} \exp(-\frac{t-t_0}{\tau}) )
+  \label{pulseshape_eq}
+\end{equation}
+%
+with $A$ the total amplitude of the signal received by the strip, $t_i = (i-1) \times [{\rm EleSamplingPeriod} = 25 {\rm ns}]$, $t_0$ the event trigger time, and $\tau = [{\rm PulseShapeTau} = 56 {\rm ns}]$ the pulse shape constant.
+We will describe in more detail the determination of the trigger time in Subsec.~\ref{bkgd_superimp}.
+Each amplitude sample is converted into an ADC value such as:
+%
+\begin{equation}
+  ADC_i = {\rm Min}((a_i-[{\rm ADCOffset} = 0])/[{\rm ADCGain} = 1], 2^{[{\rm ADCBits} = 12]}).
+\end{equation}
+%
+\begin{myindentpar}{2.5cm}
+{\it Question}: I am describing the code as it is, but should not we multiply by the gain instead of dividing? Is that even relevent provided that, to my understanding, the APV do not amplify the signal readout from the strips?
+\end{myindentpar}
+{\it Just before saving the strips in the output file}, each ADC sample is reevaluated to account for the APV25 chip ADC sample pedestal:
+%
+\begin{equation}
+  ADC_i = {\rm Min}({\rm Gaus}(ADC_i, [{\rm PulseNoiseSigma} = 20]) , 4000).
+  %ADC_i = Min({\rm Gaus}(ADC_i, [{\rm PulseNoiseSigma} = 20]) , 2^{[{\rm ADCBits} = 12]}).
+\end{equation}
+%
+(Comment: this needs to be squared up: we are not adding the common mode, but it should be accounted in the saturation. If the common mode is around 100 ADC values, then the hardcoded value should be about fine - except it should not be hardcoded anyway. Also, the saturation should only be made in this last step.)
+
+\subsection{background superimposition}
+\label{bkgd_superimp}
+The main interest of this study is to evaluate the tracking capabilities in the presence of beam-on-target background. However, g4sbs does not handle yet a multigenerator which would allow to generate both signal and beam-on-target background simultaneously in a single simulation.
+The GEM digitization, however, is able to handle the superimposition of several types of simulation files (usually signal and background), in proportions that can be decided by the user (usually many background events on top of one signal event).
+
+In practice, for each background event, the strips hit and the ADC samples are evaluated for each background hit, in a similar way to the signal hits, and are then added on top of the preexisting strips/samples.
+In other words, if a strip has already been hit before, the ADC samples are simpled added to the already existing values.
+
+The only steps which differs between the signal and the background is the evaluation 
+of the event trigger time $t_0$, which had already been mentioned in Eq.~\ref{pulseshape_eq}.
+
+For the signal, this trigger time is evaluated as:
+%
+\begin{equation}
+  t_0 = t_{\rm hit} + t_{\rm trig offset}(GEM plane) + t_{\rm drift min} + {\rm Gaus}(0, [{\rm TriggerJitter} = 9 ns])
+\end{equation}
+%
+with $t_{\rm hit}$ already defined in Sec.~\ref{simu_input}, $t_{\rm trig offset}(GEM plane)$ the trigger offset to apply to obtain a primary hit time distribution centered to $t = 0$ for each plane, $t_{\rm drift min}$ the minimal drift time for the ion produced the closest to the readout.
+The TriggerJitter accounts for both the actual trigger jitter, but mostly for the fact that this trigger is out-of-sync with the APV chip clock.
+
+For the background on the other hand, the trigger time has almost the same expression, except $t_{\rm hit}$, %is evaluated as:
+%
+%\begin{equation}
+%  t_0 = {\rm Uniform}(-[{\rm GateWidth} = 200 ns], +8 \times {\rm EleSamplingPeriod}) + t_{\rm trig offset}(GEM plane) + t_{\rm drift min} + {\rm Gaus}(0, {\rm TriggerJitter}).
+%\end{equation}
+%
+(Comment: I understand the relevance of spreading background from -200 ns - which is the time when a background hit can start contributing to the signal. On the other hand, I'm really not convinced we should extend the spread up to +200 ns. A particle depositing energy in the gas drift at the same time the $6^{\rm th}$ sample is past {\it i.e.} at +150 ns is not going to give any signal.)
+
+
+%The way the background is additioned is the following:
+%
+%\begin{itemize}
+%\item{The ;}
+%\item{one signal event is digitized;}
+%\end{itemize}
+%
+%The superimposition of signal and background is made as such:
+%
+%
+
+%
+%\begin{equation}
+% A_{\text {LU}} = \frac{N_+-N_-}{N_++N_-}
+%\end{equation}
+%
+%\begin{figure}[htb!]
+%\centerline{\includegraphics[width=8cm]{TDIS-calibration.pdf}}
+%\caption[]{Setup for mTPC calibration. SBS will be located at the same angle of 12 degrees, and HCAL at 60 degrees and 15 meters distance from target.}
+%\label{fig:tpccalib} 
+%\end{figure}
+%
+%\begin{eqnarray}
+%\mathrm{D}({\vec e},e'\gamma) X &=& d({\vec e},e'\gamma)d + n({\vec e},e'\gamma)n + p({\vec e},e'\gamma)p + \ldots \nonumber \\
+%&=& \text{d-DVCS}\,+\,\text{n-DVCS}\,+\,\text{p-DVCS}+\ldots 
+%\label{ImAp22}
+%\end{eqnarray}

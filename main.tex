@@ -1,0 +1,52 @@
+\documentclass{article}
+\usepackage{color,rotate,graphics,graphicx,epsfig,amssymb,latexsym,epsfig,graphicx,authblk}
+\usepackage{booktabs}
+\usepackage{epsfig}
+\usepackage{amsmath}
+\usepackage{rotating}
+\usepackage{caption}
+\usepackage{subfig}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{epstopdf}
+\usepackage{url} 
+\usepackage{listings}
+\usepackage{cite}
+\usepackage{upquote}
+\usepackage{xcolor}
+\usepackage{pdfpages}
+\usepackage[section]{placeins}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{amsfonts}
+\usepackage{rotating}
+\usepackage{pstricks}
+\usepackage{fancyhdr}
+%\usepackage[utf8]{inputenc}
+%\usepackage{lineno}
+%\linenumbers
+%\catcode`\@=11
+
+\newenvironment{myindentpar}[1]%
+{\begin{list}{}%
+         {\setlength{\leftmargin}{#1}}%
+         \item[]%
+}
+{\end{list}}
+
+\title{GEM digitization and tracking with GEp}
+\author{E. Fuchey}
+\begin{document}
+\maketitle
+
+\tableofcontents
+
+\input{digitization}
+\input{decoding}
+
+%\listoffigures
+%\listoftables
+
+ 
+
+\end{document}

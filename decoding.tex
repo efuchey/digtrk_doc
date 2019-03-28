@@ -1,18 +1,41 @@
-\section{GEM decoding}
-\label{decoding}
+\section{GEM clustering and (pre-2019) analysis}
+\label{clustering}
 
-This section describes the decoding of the GEM strips, the selection of ``good'' strips, and clustering.
+The clustering aims to reconstruct the GEM hits with which the tracks will be reconstructed.
+This section describes the decoding of the GEM strips, the selection of ``good'' strips, and clustering, that has been used until early 2019.
 
 \subsection{Strip decoding and selection}
 \label{strip_sel}
 
-%The strips are decoded by the TreeSearch alogrithm.
-
+The GEM data are decoded strip-per-strip independently for each readout plane.
+For each strip all 6 ADC samples are read and the sum of ADC samples is evaluated.
+For the strip to be selected as a potentially good signal strip, this sum has to reach a threshold configurable by the database.
+We had set it to 180 which corresponds to the equivalent of the sum over the 6 samples of 2 standard deviations of a sample pedestal.
+While the samples are read, we check the maximal ADC values over the second, third, fourth samples (which is where the signal peak should tyipcally be). This maximum has to be at least 40 ADC (configurable in the database) for the strip to be selected as a potentially good signal strip.  
+Finally, the strips samples are being fitted by a function of the form:
+%
+\begin{equation}
+  f(t) = A \frac{t-t_0}{\tau} \times \exp{\frac{t-t_0}{\tau}},
+  \label{eq:pulse_fcn}
+\end{equation}
+%
+to detemine the peak of the distribution. The peak of the fitted function has to be located within the time range covered by the 6 samples.
+As a recap, a strip will be considered as good if:
+%
+\begin{itemize}
+\item{The sum of all 6 ADC samples is $\geq$ 180 ADC channels;}
+\item{One sample among the second, third, and fourth has an ADC value $\geq$ 40;}
+\item{the peak of the function described in equation \ref{eq:pulse_fcn} fitted over the 6 samples is within the time span covered by those 6 samples.}
+\end{itemize}
+%
+Only the strips meeting this requirement are used for the clustering described in the next subsection.
 
 \subsection{Clustering, cluster selection}
 \label{clustering}
 
+The basic idea behind the clustering is to group together all ``good'' adjacent strips.
 
+\subsection{performance for $G_E^p$}
 
 %
 %\begin{itemize}

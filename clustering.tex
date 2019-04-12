@@ -11,7 +11,7 @@ The GEM data are decoded strip-per-strip independently for each readout plane.
 For each strip all 6 ADC samples are read and the sum of ADC samples is evaluated.
 For the strip to be selected as a potentially good signal strip, this sum has to reach a threshold configurable by the database.
 We had set it to 180 which corresponds to the equivalent of the sum over the 6 samples of 2 standard deviations of a sample pedestal.
-While the samples are read, we check the maximal ADC values over the second, third, fourth samples (which is where the signal peak should tyipcally be). This maximum has to be at least 40 ADC (configurable in the database) for the strip to be selected as a potentially good signal strip.  
+While the samples are read, we check the variable noted ``MaxADC'' which is the maximal ADC values over the second, third, fourth samples (which is where the signal peak should tyipcally be). This maximum has to be at least 40 ADC (configurable in the database) for the strip to be selected as a potentially good signal strip.  
 Finally, the strips samples are being fitted by a function of the form:
 %
 \begin{equation}
@@ -33,7 +33,22 @@ Only the strips meeting this requirement are used for the clustering described i
 \subsection{Clustering, cluster selection}
 \label{cluster_algo}
 
-The basic idea behind the clustering is to group together all ``good'' adjacent strips.
+%The basic idea behind the clustering is to group together all 
+By the algorithm we are going to describe, a cluster is a group of ``good'' adjacent strips ({\it i.e.} a group of strips meeting the conditions stated in the previous subsection).
+
+When the strips are grouped together, the algorithm compares the size of the group of strips
+with a limit (noted ``MaxClustSize'') defined in the database (in our case, 6 strips -{\em need to check that as well}).
+If the strip group size is smaller than the limit, the algorithm performs the clustering directly. This is described in subsubsection~\ref{single_cluster}.
+If it is larger, the algorithm attempts to split the cluster in size and time. This is described in subsubsection~\ref{cluster_split}.
+
+\subsubsection{single cluster analysis}
+\label{single_cluster}
+in the simple case of a single cluster ({\it i.e.} with a number of strips below ``MaxClustSize''), the position is calculated as the ADC weighted average of the position of the strips involved in the cluster. The time of the hit is the time of the strip with the largest ``MaxADC'' value.
+
+\subsubsection{cluster splitting}
+\label{cluster_split}
+
+
 
 \subsection{performance for $G_E^p$}
 

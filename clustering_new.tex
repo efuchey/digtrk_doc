@@ -1,8 +1,18 @@
 \section{GEM clustering - post-2019 analysis}
 \label{clustering_new}
 
-This section describes the new GEM decoding analysis we set up after the realization that the old clustering method described in section~\ref{clustering} was suffering inefficiencies.
+{\em The new clustering algorithm itself is in development. For the moment this section just means to put on the table what ideas can be realized.}
 
+This section describes the new GEM decoding analysis we set up after the realization that the old clustering method described in section~\ref{clustering} was suffering inefficiencies.
+One of the features we want to exploit is the correlation in time and amplitude between both readout coordinates. We also want to exploit the relatively well known shape of the spread avalanche.
+The main challenge is that we want to consider clusters, and not strips, as the first degrees of freedom, but we still have to deal with strips as they are the only information we have available from the DAQ.
+
+An option could be to scan the strips in both coordinates, and start to group together strips with a similar sampling pattern (indicating a similar time). If two strips with a similar sampling pattern and a detectable (but not {\em large}) signal are separated with one strip which does not seem to show this same pattern, the middle strip should be integrated into the cluster nonetheless.
+
+Indeed the signal amplitude we could have for the proton in GEp could be fairly small, and it is fairly easy for a strip to be distorted enough by the pedestal that we can hardly match its sampling pattern with the others.
+
+While scanning the strips, if we scan at least a couple strips with a similar sampling pattern, the one with the maximal amplitude should be considered as the ``center'' of the hit, and the limits of the hit could be extended to the few neighboring strips.
+%, to evaluate their time and ADC maxima. Then, one would match (within some tolerence to be defined) the strips with 
 
 
 %

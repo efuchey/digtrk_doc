@@ -3,6 +3,7 @@
 
 The clustering aims to reconstruct the GEM hits with which the tracks will be reconstructed.
 This section describes the decoding of the GEM strips, the selection of ``good'' strips, and clustering, that has been used until early 2019.
+The clustering is made independently  in each readout coordinates, then the hits are being recombined after some tracking steps.
 
 \subsection{Strip decoding and selection}
 \label{strip_sel}
@@ -43,14 +44,20 @@ If it is larger, the algorithm attempts to split the cluster in size and time. T
 
 \subsubsection{single cluster analysis}
 \label{single_cluster}
-in the simple case of a single cluster ({\it i.e.} with a number of strips below ``MaxClustSize''), the position is calculated as the ADC weighted average of the position of the strips involved in the cluster. The time of the hit is the time of the strip with the largest ``MaxADC'' value.
+In the simple case of a single cluster ({\it i.e.} with a number of strips below ``MaxClustSize''), the amplitude is calculated as the sum of the strips ADC; the position is calculated as the ADC weighted average of the position of the strips involved in the cluster; the time of the hit is the time of the strip with the largest ``MaxADC'' value.
 
 \subsubsection{cluster splitting}
 \label{cluster_split}
+In the event where there is a consecutive number of valid strips above ``MaxClustSize'', a ``peak-valley-peak'' pattern is searched. In practice, a first ADC maximum is searched, then the strips with a minimum ADC value is searched for.
+If this minimum is less than a fraction defined by the database parameter ``'' and is followed by another maximum, then the strip is split between the two consecutive clusters.
+What that means is the strip will be accounted for in both clusters, and the ADC value will be split between both clusters {\it i.e.} the ADC sum of this strip is divided between both clusters.
+If the group the strips after the first minimum is larger than ``MaxClustSize'', the algorithm repeats this procedure until it has scanned all the group of strips.
+All the clusters obtained can now be treated as single clusters for the calculation of their position, amplitude and time.
+If in a group of strips larger than ``MaxClustSize'' a ``peak-valley-peak'' pattern cannot be found, the algorithm considers it as a ``large'' cluster, which in practice is treated as a single cluster for the calculation of its position, amplitude and time.
+%and the rest hits. 
 
 
-
-\subsection{performance for $G_E^p$}
+%\subsection{performance for $G_E^p$}
 
 %
 %\begin{itemize}
